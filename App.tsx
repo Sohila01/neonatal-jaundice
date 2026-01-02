@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { INITIAL_SLIDES } from './constants';
 import SlideRenderer from './components/SlideRenderer';
 import { IconRenderer, Icons } from './components/Icons';
-import { SlideContent, SlideType, AccentColor, CardSize, BackgroundStyle } from './types';
+import { SlideContent, SlideType, AccentColor, CardSize, BackgroundStyle, TransitionType } from './types';
 import { GoogleGenAI } from "@google/genai";
 
 function App() {
@@ -16,6 +16,15 @@ function App() {
   const [currentPhase, setCurrentPhase] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isProcessingImage, setIsProcessingImage] = useState<string | null>(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('atlas_theme_mode');
+    return saved ? JSON.parse(saved) : true; // Default to dark mode
+  });
+
+  const EDITOR_PASSWORD = 'Sohila@@Admin@@';
 
   const activeSlide = slides[currentSlide];
 
@@ -30,6 +39,20 @@ function App() {
   useEffect(() => {
     localStorage.setItem('atlas_slides_v10', JSON.stringify(slides));
   }, [slides]);
+
+  useEffect(() => {
+    localStorage.setItem('atlas_theme_mode', JSON.stringify(isDarkMode));
+    // Apply theme to document
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      document.body.style.background = '#050a15';
+      document.body.style.color = '#e2e8f0';
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.body.style.background = '#f8fafc';
+      document.body.style.color = '#1e293b';
+    }
+  }, [isDarkMode]);
 
   const handleNext = useCallback(() => {
     if (currentPhase < activeSlide.phases.length - 1) {
@@ -48,6 +71,28 @@ function App() {
       setCurrentPhase(slides[currentSlide - 1].phases.length - 1);
     }
   }, [currentPhase, currentSlide, slides]);
+
+  const handlePasswordSubmit = () => {
+    if (passwordInput === EDITOR_PASSWORD) {
+      setIsEditMode(true);
+      setShowPasswordModal(false);
+      setPasswordInput('');
+      setPasswordError(false);
+    } else {
+      setPasswordError(true);
+      setPasswordInput('');
+    }
+  };
+
+  const handleEditorToggle = () => {
+    if (isEditMode) {
+      setIsEditMode(false);
+    } else {
+      setShowPasswordModal(true);
+      setPasswordInput('');
+      setPasswordError(false);
+    }
+  };
 
   const handleGlobalClick = (e: React.MouseEvent) => {
     if (isEditMode) return;
@@ -178,38 +223,39 @@ function App() {
 
   return (
     <div 
-      className="relative h-screen w-full bg-[#050a15] text-white overflow-hidden panoramic-bg select-none"
+      className={`relative h-screen w-full text-white overflow-hidden panoramic-bg select-none transition-colors duration-700 ${isDarkMode ? 'bg-[#050a15]' : 'bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 text-slate-900'}`}
       onClick={handleGlobalClick}
       onContextMenu={handleGlobalContextMenu}
+      style={!isDarkMode ? { color: '#1e293b' } : {}}
     >
       {/* Editor Panel */}
       {isEditMode && (
-        <div className="edit-panel fixed inset-y-0 right-0 w-[450px] bg-slate-950/98 backdrop-blur-[80px] z-[150] border-l border-white/10 p-8 overflow-y-auto shadow-[-50px_0_120px_rgba(0,0,0,0.8)] animate-in slide-in-from-right duration-500 no-scrollbar" onClick={(e) => e.stopPropagation()}>
+        <div className={`edit-panel fixed inset-y-0 right-0 w-[450px] backdrop-blur-[80px] z-[150] border-l p-8 overflow-y-auto shadow-[-50px_0_120px_rgba(0,0,0,0.8)] animate-in slide-in-from-right duration-500 no-scrollbar transition-colors ${isDarkMode ? 'bg-slate-950/98 border-white/10' : 'bg-white/95 border-slate-200'}`} onClick={(e) => e.stopPropagation()}>
           <div className="flex justify-between items-start mb-10">
             <div className="space-y-1">
-              <h2 className="atlas-title text-xl font-black text-blue-400 uppercase tracking-tighter">Clinical Editor Suite</h2>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Architect Mode Active</p>
+              <h2 className={`atlas-title text-xl font-black uppercase tracking-tighter transition-colors ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>Clinical Editor Suite</h2>
+              <p className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>Architect Mode Active</p>
             </div>
             <div className="flex gap-2">
-               <div className="flex bg-white/5 rounded-2xl p-1 border border-white/10">
+               <div className={`flex rounded-2xl p-1 border transition-colors ${isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-200 border-slate-300'}`}>
                   <button 
                     onClick={addSlide} 
                     title="Add New Slide"
-                    className="p-3 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-xl transition-all"
+                    className={`p-3 rounded-xl transition-all ${isDarkMode ? 'text-emerald-400 hover:bg-emerald-500 hover:text-white' : 'text-emerald-600 hover:bg-emerald-600 hover:text-white'}`}
                   >
                     <IconRenderer name="Activity" className="w-5 h-5" />
                   </button>
                   <button 
                     onClick={deleteSlide} 
                     title="Delete Current Slide"
-                    className="p-3 text-rose-400 hover:bg-rose-500 hover:text-white rounded-xl transition-all"
+                    className={`p-3 rounded-xl transition-all ${isDarkMode ? 'text-rose-400 hover:bg-rose-500 hover:text-white' : 'text-rose-600 hover:bg-rose-600 hover:text-white'}`}
                   >
                     <IconRenderer name="Trash2" className="w-5 h-5" />
                   </button>
                </div>
                <button 
                 onClick={() => setIsEditMode(false)}
-                className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl border border-white/10 transition-all"
+                className={`p-3 rounded-2xl border transition-all ${isDarkMode ? 'bg-white/10 hover:bg-white/20 text-white border-white/10' : 'bg-slate-200 hover:bg-slate-300 text-slate-900 border-slate-300'}`}
                 title="Close Editor"
                >
                  <IconRenderer name="X" className="w-5 h-5" />
@@ -218,12 +264,12 @@ function App() {
           </div>
           
           <div className="space-y-8">
-            <section className="p-6 bg-white/5 rounded-[2rem] border border-white/5 space-y-5">
-              <label className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Architecture</label>
+            <section className={`p-6 rounded-[2rem] border space-y-5 transition-colors ${isDarkMode ? 'bg-white/5 border-white/5' : 'bg-slate-100 border-slate-200'}`}>
+              <label className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${isDarkMode ? 'text-slate-500' : 'text-slate-600'}`}>Architecture</label>
               
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase">System Accent Palette</span>
+                  <span className={`text-[9px] font-bold uppercase transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>System Accent Palette</span>
                   <div className="flex flex-wrap gap-2">
                     {(['blue', 'gold', 'emerald', 'rose', 'purple', 'cyan', 'crimson', 'amber', 'indigo'] as AccentColor[]).map(c => (
                       <button 
@@ -238,9 +284,9 @@ function App() {
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase">Background</span>
+                      <span className={`text-[9px] font-bold uppercase transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Background</span>
                       <select 
-                        className="w-full bg-black/50 border border-white/10 p-3 rounded-xl text-[10px] font-black uppercase outline-none focus:border-blue-500 transition-colors"
+                        className={`w-full p-3 rounded-xl text-[10px] font-black uppercase outline-none transition-colors ${isDarkMode ? 'bg-black/50 border border-white/10 focus:border-blue-500 text-white' : 'bg-white border border-slate-300 focus:border-blue-400 text-slate-900'}`}
                         value={activeSlide.backgroundStyle || 'mesh'}
                         onChange={e => updateActiveSlide({ backgroundStyle: e.target.value as BackgroundStyle })}
                       >
@@ -250,9 +296,9 @@ function App() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <span className="text-[9px] font-bold text-slate-400 uppercase">Layout</span>
+                      <span className={`text-[9px] font-bold uppercase transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Layout</span>
                       <select 
-                        className="w-full bg-black/50 border border-white/10 p-3 rounded-xl text-[10px] font-black uppercase outline-none focus:border-blue-500 transition-colors"
+                        className={`w-full p-3 rounded-xl text-[10px] font-black uppercase outline-none transition-colors ${isDarkMode ? 'bg-black/50 border border-white/10 focus:border-blue-500 text-white' : 'bg-white border border-slate-300 focus:border-blue-400 text-slate-900'}`}
                         value={activeSlide.type}
                         onChange={e => updateActiveSlide({ type: e.target.value as SlideType })}
                       >
@@ -270,19 +316,38 @@ function App() {
                             <option value="spotlight">Phase Spotlight</option>
                             <option value="comparison">Side Comparison</option>
                         </optgroup>
+                        <optgroup label="New Designs">
+                            <option value="infographic">Infographic</option>
+                            <option value="animated-list">Animated List</option>
+                            <option value="card-grid">Card Grid</option>
+                        </optgroup>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <span className={`text-[9px] font-bold uppercase transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Transition</span>
+                      <select 
+                        className={`w-full p-3 rounded-xl text-[10px] font-black uppercase outline-none transition-colors ${isDarkMode ? 'bg-black/50 border border-white/10 focus:border-blue-500 text-white' : 'bg-white border border-slate-300 focus:border-blue-400 text-slate-900'}`}
+                        value={activeSlide.transitionType || 'fade'}
+                        onChange={e => updateActiveSlide({ transitionType: e.target.value as TransitionType })}
+                      >
+                        <option value="fade">Fade</option>
+                        <option value="slide">Slide</option>
+                        <option value="zoom">Zoom</option>
+                        <option value="flip">Flip</option>
+                        <option value="rotate">Rotate</option>
                       </select>
                     </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <div className="flex justify-between text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                <div className={`flex justify-between text-[9px] font-bold uppercase tracking-widest transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
                     <span>Glass Opacity</span>
                     <span>{Math.round((activeSlide.glassIntensity || 0.6) * 100)}%</span>
                 </div>
                 <input 
                   type="range" min="0" max="1" step="0.05" 
-                  className="w-full h-1 bg-white/5 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                  className={`w-full h-1 rounded-lg appearance-none cursor-pointer accent-blue-500 transition-colors ${isDarkMode ? 'bg-white/5' : 'bg-slate-300'}`}
                   value={activeSlide.glassIntensity ?? 0.6}
                   onChange={e => updateActiveSlide({ glassIntensity: parseFloat(e.target.value) })}
                 />
@@ -291,18 +356,18 @@ function App() {
 
             <section className="space-y-4">
               <div className="space-y-1.5">
-                 <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-3">Slide Title</span>
+                 <span className={`text-[9px] font-black uppercase tracking-widest ml-3 transition-colors ${isDarkMode ? 'text-slate-500' : 'text-slate-600'}`}>Slide Title</span>
                  <input 
-                    className="w-full bg-white/5 border border-white/10 p-4 rounded-[1.5rem] focus:border-blue-500 outline-none text-xl font-black uppercase atlas-title tracking-tighter"
+                    className={`w-full p-4 rounded-[1.5rem] focus:outline-none text-xl font-black uppercase atlas-title tracking-tighter transition-colors ${isDarkMode ? 'bg-white/5 border border-white/10 focus:border-blue-500 text-white' : 'bg-slate-100 border border-slate-300 focus:border-blue-400 text-slate-900'}`}
                     placeholder="E.g. NEONATAL PATHOLOGY"
                     value={activeSlide.title}
                     onChange={e => updateActiveSlide({ title: e.target.value })}
                   />
               </div>
               <div className="space-y-1.5">
-                 <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest ml-3">Subtitle</span>
+                 <span className={`text-[9px] font-black uppercase tracking-widest ml-3 transition-colors ${isDarkMode ? 'text-slate-500' : 'text-slate-600'}`}>Subtitle</span>
                   <input 
-                    className="w-full bg-white/5 border border-white/10 p-3.5 rounded-xl focus:border-blue-500 outline-none text-sm text-slate-400 font-light"
+                    className={`w-full p-3.5 rounded-xl focus:outline-none text-sm font-light transition-colors ${isDarkMode ? 'bg-white/5 border border-white/10 focus:border-blue-500 text-slate-400' : 'bg-slate-100 border border-slate-300 focus:border-blue-400 text-slate-700'}`}
                     placeholder="Enter context..."
                     value={activeSlide.subtitle}
                     onChange={e => updateActiveSlide({ subtitle: e.target.value })}
@@ -320,12 +385,12 @@ function App() {
               </div>
 
               {activeSlide.phases.map((phase, idx) => (
-                <div key={phase.id} className="p-6 rounded-[2.5rem] bg-white/5 border border-white/5 space-y-5 relative group hover:border-blue-500/40 transition-all duration-700 shadow-xl">
+                <div key={phase.id} className={`p-6 rounded-[2.5rem] border space-y-5 relative group transition-all duration-700 shadow-xl ${isDarkMode ? 'bg-white/5 border-white/5 hover:border-blue-500/40' : 'bg-slate-100 border-slate-200 hover:border-blue-400/40'}`}>
                   <div className="flex justify-between items-center">
-                    <p className="text-[9px] font-black text-blue-500 bg-blue-500/10 px-3 py-1 rounded-full uppercase tracking-widest">Step {idx+1}</p>
+                    <p className={`text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest transition-colors ${isDarkMode ? 'text-blue-500 bg-blue-500/10' : 'text-blue-600 bg-blue-600/10'}`}>Step {idx+1}</p>
                     <div className="flex gap-2">
                        <select 
-                        className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-[9px] font-black uppercase outline-none focus:border-blue-500"
+                        className={`rounded-lg px-3 py-1.5 text-[9px] font-black uppercase outline-none transition-colors ${isDarkMode ? 'bg-black/40 border border-white/10 focus:border-blue-500 text-white' : 'bg-slate-200 border border-slate-300 focus:border-blue-400 text-slate-900'}`}
                         value={phase.size || 'md'}
                         onChange={e => updatePhase(idx, { size: e.target.value as CardSize })}
                       >
@@ -333,14 +398,14 @@ function App() {
                         <option value="md">Standard</option>
                         <option value="lg">Wide</option>
                       </select>
-                      <button onClick={() => updateActiveSlide({ phases: activeSlide.phases.filter((_, i) => i !== idx) })} className="p-2 text-red-500/40 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"><IconRenderer name="X" className="w-4 h-4" /></button>
+                      <button onClick={() => updateActiveSlide({ phases: activeSlide.phases.filter((_, i) => i !== idx) })} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'text-red-500/40 hover:text-red-500 hover:bg-red-500/10' : 'text-red-600/40 hover:text-red-600 hover:bg-red-600/10'}`}><IconRenderer name="X" className="w-4 h-4" /></button>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-6 gap-3">
                     <div className="col-span-1">
                       <select 
-                        className="w-full h-full bg-black/50 border border-white/10 rounded-xl flex items-center justify-center text-xl text-center outline-none focus:border-blue-500 transition-colors"
+                        className={`w-full h-full rounded-xl flex items-center justify-center text-xl text-center outline-none transition-colors ${isDarkMode ? 'bg-black/50 border border-white/10 focus:border-blue-500 text-white' : 'bg-slate-200 border border-slate-300 focus:border-blue-400 text-slate-900'}`}
                         value={phase.icon}
                         onChange={e => updatePhase(idx, { icon: e.target.value })}
                       >
@@ -348,7 +413,7 @@ function App() {
                       </select>
                     </div>
                     <input 
-                      className="col-span-5 bg-black/50 border border-white/5 p-4 rounded-xl text-base font-black uppercase atlas-title focus:border-blue-500 outline-none transition-colors"
+                      className={`col-span-5 p-4 rounded-xl text-base font-black uppercase atlas-title outline-none transition-colors ${isDarkMode ? 'bg-black/50 border border-white/5 focus:border-blue-500' : 'bg-slate-200 border border-slate-300 focus:border-blue-400 text-slate-900'}`}
                       value={phase.title}
                       placeholder="Title"
                       onChange={e => updatePhase(idx, { title: e.target.value })}
@@ -356,7 +421,7 @@ function App() {
                   </div>
 
                   <textarea 
-                    className="w-full bg-black/50 border border-white/5 p-4 rounded-xl text-xs h-24 resize-none focus:border-blue-500 outline-none leading-relaxed text-slate-300 font-light"
+                    className={`w-full p-4 rounded-xl text-xs h-24 resize-none outline-none leading-relaxed font-light transition-colors ${isDarkMode ? 'bg-black/50 border border-white/5 focus:border-blue-500 text-slate-300' : 'bg-slate-200 border border-slate-300 focus:border-blue-400 text-slate-700'}`}
                     value={phase.description}
                     placeholder="Evidence..."
                     onChange={e => updatePhase(idx, { description: e.target.value })}
@@ -364,18 +429,18 @@ function App() {
 
                   <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest ml-2">Clinical Pearl</span>
+                        <span className={`text-[8px] font-black uppercase tracking-widest ml-2 transition-colors ${isDarkMode ? 'text-slate-600' : 'text-slate-500'}`}>Clinical Pearl</span>
                         <input 
-                            className="w-full bg-black/50 border border-white/5 p-3 rounded-lg text-[10px] text-emerald-400 outline-none focus:border-emerald-500 transition-colors"
+                            className={`w-full p-3 rounded-lg text-[10px] outline-none transition-colors ${isDarkMode ? 'bg-black/50 border border-white/5 focus:border-emerald-500 text-emerald-400' : 'bg-slate-200 border border-slate-300 focus:border-emerald-400 text-emerald-600'}`}
                             value={phase.clinicalPearl || ''}
                             placeholder="Insight..."
                             onChange={e => updatePhase(idx, { clinicalPearl: e.target.value })}
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest ml-2">Value</span>
+                        <span className={`text-[8px] font-black uppercase tracking-widest ml-2 transition-colors ${isDarkMode ? 'text-slate-600' : 'text-slate-500'}`}>Value</span>
                         <input 
-                            className="w-full bg-black/50 border border-white/5 p-3 rounded-lg text-[10px] text-blue-400 font-black outline-none focus:border-blue-500 transition-colors"
+                            className={`w-full p-3 rounded-lg text-[10px] font-black outline-none transition-colors ${isDarkMode ? 'bg-black/50 border border-white/5 focus:border-blue-500 text-blue-400' : 'bg-slate-200 border border-slate-300 focus:border-blue-400 text-blue-600'}`}
                             value={phase.medicalValue || ''}
                             placeholder="E.g. >15"
                             onChange={e => updatePhase(idx, { medicalValue: e.target.value })}
@@ -418,9 +483,16 @@ function App() {
       )}
 
       {/* Editor Trigger */}
-      <div className="fixed top-8 right-8 z-[100]">
+      <div className="fixed top-8 right-8 z-[100] flex gap-3">
         <button 
-          onClick={(e) => { e.stopPropagation(); setIsEditMode(!isEditMode); }}
+          onClick={() => setIsDarkMode(!isDarkMode)}
+          title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-700 border ${isDarkMode ? 'bg-yellow-600/10 border-yellow-500/30 hover:bg-yellow-600' : 'bg-slate-400/10 border-slate-500/30 hover:bg-slate-400'}`}
+        >
+          <IconRenderer name={isDarkMode ? "Sun" : "Moon"} className="w-6 h-6" />
+        </button>
+        <button 
+          onClick={(e) => { e.stopPropagation(); handleEditorToggle(); }}
           className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-700 border ${isEditMode ? 'bg-red-600 border-red-500 rotate-90' : 'bg-blue-600/10 border-blue-500/30 backdrop-blur-[40px] hover:bg-blue-600 hover:scale-110'}`}
         >
           <IconRenderer name={isEditMode ? "X" : "Menu"} className="w-6 h-6" />
@@ -428,15 +500,15 @@ function App() {
       </div>
 
       {/* Side Navigation Dots */}
-      <div className="absolute left-8 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-10 pointer-events-none">
-        <div className="text-vertical text-[9px] font-black uppercase tracking-[1em] text-white/5 animate-pulse">Diagnostics 2025</div>
-        <div className="w-px h-32 bg-gradient-to-b from-transparent via-blue-500/40 to-transparent"></div>
+      <div className={`absolute left-8 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-10 pointer-events-none transition-colors ${isDarkMode ? 'text-white/5' : 'text-slate-600/30'}`}>
+        <div className={`text-vertical text-[9px] font-black uppercase tracking-[1em] animate-pulse transition-colors ${isDarkMode ? 'text-white/5' : 'text-slate-400'}`}>Diagnostics 2025</div>
+        <div className={`w-px h-32 bg-gradient-to-b from-transparent to-transparent transition-colors ${isDarkMode ? 'via-blue-500/40' : 'via-blue-400/30'}`}></div>
         <div className="flex flex-col gap-4 overflow-y-auto max-h-[40vh] no-scrollbar pointer-events-auto px-4 py-6">
            {slides.map((_, i) => (
              <div 
                key={i} 
                onClick={(e) => { e.stopPropagation(); setCurrentSlide(i); setCurrentPhase(0); }}
-               className={`w-2 h-2 rounded-full cursor-pointer transition-all duration-700 ${i === currentSlide ? 'bg-blue-500 scale-[2.5] shadow-[0_0_20px_rgba(59,130,246,1)]' : 'bg-white/5 hover:bg-white/30'}`}
+               className={`w-2 h-2 rounded-full cursor-pointer transition-all duration-700 ${i === currentSlide ? isDarkMode ? 'bg-blue-500 scale-[2.5] shadow-[0_0_20px_rgba(59,130,246,1)]' : 'bg-blue-600 scale-[2.5] shadow-[0_0_20px_rgba(37,99,235,1)]' : isDarkMode ? 'bg-white/5 hover:bg-white/30' : 'bg-slate-400/30 hover:bg-slate-400/50'}`}
              ></div>
            ))}
         </div>
@@ -444,7 +516,7 @@ function App() {
 
       <main className="relative z-40 h-full w-full flex items-center justify-center pointer-events-none overflow-hidden">
         <div key={currentSlide} className="w-full h-full panoramic-slide">
-          <SlideRenderer slide={activeSlide} currentPhase={currentPhase} />
+          <SlideRenderer slide={activeSlide} currentPhase={currentPhase} isDarkMode={isDarkMode} />
         </div>
       </main>
 
@@ -490,6 +562,57 @@ function App() {
           style={{ width: `${progress}%` }}
         ></div>
       </div>
+
+      {/* Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[150] flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-black border border-blue-500/30 rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <h2 className="text-xl font-black uppercase tracking-[0.2em] text-white mb-6">Enter Editor Password</h2>
+            
+            <div className="space-y-4">
+              <input
+                type="password"
+                value={passwordInput}
+                onChange={(e) => {
+                  setPasswordInput(e.target.value);
+                  setPasswordError(false);
+                }}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handlePasswordSubmit();
+                  }
+                }}
+                placeholder="Password"
+                className={`w-full bg-black/50 border rounded-xl p-3 text-white placeholder-slate-500 outline-none transition-all ${passwordError ? 'border-rose-500 focus:border-rose-400' : 'border-blue-500/30 focus:border-blue-500'}`}
+                autoFocus
+              />
+              
+              {passwordError && (
+                <p className="text-rose-400 text-sm font-semibold">Incorrect password. Please try again.</p>
+              )}
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setPasswordInput('');
+                    setPasswordError(false);
+                  }}
+                  className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-xl transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePasswordSubmit}
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-xl transition-all"
+                >
+                  Unlock
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

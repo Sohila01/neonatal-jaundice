@@ -16,7 +16,12 @@ export type SlideType =
   | 'cycle'
   | 'split-vertical'
   | 'spotlight'
-  | 'gallery';
+  | 'gallery'
+  | 'infographic'
+  | 'animated-list'
+  | 'card-grid';
+
+export type TransitionType = 'fade' | 'slide' | 'zoom' | 'flip' | 'rotate';
 
 export type AccentColor = 'blue' | 'gold' | 'emerald' | 'rose' | 'purple' | 'cyan' | 'crimson' | 'amber' | 'indigo';
 export type BackgroundStyle = 'mesh' | 'glass-gradient' | 'deep-solid';
@@ -51,4 +56,5 @@ export interface SlideContent {
   accentColor?: AccentColor;
   backgroundStyle?: BackgroundStyle;
   glassIntensity?: number; // 0 to 1
+  transitionType?: TransitionType;
 }

@@ -6,6 +6,7 @@ import { IconRenderer } from './Icons';
 interface Props {
   slide: SlideContent;
   currentPhase: number;
+  isDarkMode?: boolean;
 }
 
 const colorMap = {
@@ -60,11 +61,12 @@ const SafeImage: React.FC<{ src?: string; alt: string; className: string; showSc
   );
 };
 
-const SlideRenderer: React.FC<Props> = ({ slide, currentPhase }) => {
+const SlideRenderer: React.FC<Props> = ({ slide, currentPhase, isDarkMode = true }) => {
   const accent = slide.accentColor || 'blue';
   const theme = (colorMap as any)[accent] || colorMap.blue;
   const glassAlpha = slide.glassIntensity ?? 0.6;
   const activePhase = slide.phases[currentPhase] || slide.phases[0];
+  const transition = slide.transitionType || 'fade';
 
   const renderPhaseDetails = (phase: SlidePhase, active: boolean) => (
     <div className={`mt-4 space-y-4 transition-all duration-1000 ${active ? 'opacity-100 translate-y-0 h-auto' : 'opacity-0 translate-y-6 h-0 overflow-hidden'}`}>
@@ -102,7 +104,7 @@ const SlideRenderer: React.FC<Props> = ({ slide, currentPhase }) => {
   );
 
   const renderHero = () => (
-    <div className="h-full w-full flex overflow-hidden relative">
+    <div className="h-full w-full flex overflow-hidden relative bg-gradient-to-r from-slate-950 via-slate-950/95 to-transparent">
       <div className="absolute inset-0 z-0 overflow-hidden">
         <SafeImage 
           src={activePhase.image || "https://images.unsplash.com/photo-1551076805-e1869033e561?q=80&w=2000&auto=format&fit=crop"}
@@ -140,7 +142,7 @@ const SlideRenderer: React.FC<Props> = ({ slide, currentPhase }) => {
                   <span className={`text-6xl font-black transition-all duration-1000 ${i === currentPhase ? `text-${theme.primary} scale-125 translate-x-2` : 'text-white/5 grayscale'}`}>0{i+1}</span>
                   <div className={`h-16 w-px transition-colors duration-1000 ${i === currentPhase ? `bg-${theme.primary}/60` : 'bg-white/5'}`}></div>
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">Protocol Node</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">Protocol Node</span>
                     <span className={`text-xl font-black uppercase transition-all duration-1000 ${i === currentPhase ? 'text-white translate-x-1' : 'text-slate-700'}`}>{phase.title}</span>
                   </div>
                   {i === currentPhase && (
@@ -168,7 +170,7 @@ const SlideRenderer: React.FC<Props> = ({ slide, currentPhase }) => {
       <div className="space-y-6 relative z-20">
         <h2 className="atlas-title text-[140px] font-black text-white leading-none -ml-4 opacity-5 absolute -top-24 left-0 pointer-events-none select-none uppercase">{slide.title}</h2>
         <div className="relative space-y-4">
-           <h3 className="atlas-title text-7xl font-black text-white uppercase text-reveal tracking-tighter">{slide.title}</h3>
+        <h3 className="atlas-title text-7xl font-black text-white uppercase text-reveal tracking-tighter">{slide.title}</h3>
            <div className="flex items-center gap-8">
               <div className={`w-32 h-2 bg-${theme.primary} shadow-[0_0_30px_${theme.glow}]`}></div>
               <p className={`text-xl font-black text-${theme.primary} uppercase tracking-[0.6em] text-reveal [animation-delay:0.3s]`}>{slide.subtitle}</p>
@@ -183,7 +185,7 @@ const SlideRenderer: React.FC<Props> = ({ slide, currentPhase }) => {
             <div 
               key={phase.id}
               style={{ backgroundColor: `rgba(15, 23, 42, ${isActive ? 0.9 : glassAlpha})` }}
-              className={`phase-card rounded-[3rem] backdrop-blur-[60px] border transition-all duration-1000 flex flex-col relative overflow-visible
+              className={`phase-card rounded-[3rem] backdrop-blur-[60px] border transition-all duration-1000 flex flex-col relative overflow-visible border-white/10
                 ${i <= currentPhase ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-40'}
                 ${isActive ? `phase-card-active border-${theme.primary} w-[550px]` : `phase-card-inactive border-white/5 w-[320px]`}
               `}
@@ -279,7 +281,7 @@ const SlideRenderer: React.FC<Props> = ({ slide, currentPhase }) => {
             />
        </div>
 
-       <div className={`flex-[1.5] h-[75vh] rounded-[5rem] overflow-hidden border border-white/10 relative shadow-[0_0_120px_rgba(0,0,0,0.8)] transition-all duration-[1.8s] ${currentPhase >= 0 ? 'scale-100 opacity-100 rotate-0' : 'scale-90 opacity-0 rotate-3 translate-x-16'}`}>
+       <div className={`flex-[1.5] h-[75vh] rounded-[5rem] overflow-hidden border relative shadow-[0_0_120px_rgba(0,0,0,0.8)] transition-all duration-[1.8s] ${isDarkMode ? 'border-white/10' : 'border-slate-300'} ${currentPhase >= 0 ? 'scale-100 opacity-100 rotate-0' : 'scale-90 opacity-0 rotate-3 translate-x-16'}`}>
           <SafeImage src={activePhase.image} alt={activePhase.title} showScan={true} active={true} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent"></div>
           <div className="absolute bottom-16 left-16 space-y-6">
@@ -304,7 +306,7 @@ const SlideRenderer: React.FC<Props> = ({ slide, currentPhase }) => {
                 >
                    <div className="flex items-center gap-6 mb-4">
                       <span className={`text-5xl font-black transition-all duration-1000 ${isActive ? `text-${theme.primary} scale-110` : 'text-white/5'}`}>0{i+1}</span>
-                      <h4 className={`text-3xl font-black text-white atlas-title uppercase transition-all duration-1000 ${isActive ? 'translate-x-1' : ''}`}>{phase.title}</h4>
+                  <h4 className={`text-3xl font-black text-white atlas-title uppercase transition-all duration-1000 ${isActive ? 'translate-x-1' : ''}`}>{phase.title}</h4>
                    </div>
                    <p className={`text-slate-400 leading-relaxed font-light transition-all duration-1000 ${isActive ? 'text-lg opacity-100' : 'text-sm opacity-40'}`}>{phase.description}</p>
                    {renderPhaseDetails(phase, isActive)}
@@ -321,10 +323,78 @@ const SlideRenderer: React.FC<Props> = ({ slide, currentPhase }) => {
     </div>
   );
 
+  const renderInfographic = () => (
+    <div className="h-full w-full flex items-center justify-center p-12">
+      <div className={`transition-transform duration-700 ${`transition-${transition}`}`}>
+        <div className={`rounded-3xl border border-${theme.primary}/30 bg-black/40 backdrop-blur-[60px] p-16 max-w-2xl shadow-2xl`}>
+          <div className="text-center space-y-8">
+            <IconRenderer name={activePhase.icon || 'Activity'} className={`w-24 h-24 text-${theme.primary} mx-auto`} />
+            <div className="space-y-4">
+              <h2 className={`text-4xl font-black uppercase tracking-tighter text-${theme.primary}`}>{activePhase.title}</h2>
+              <p className="text-lg text-slate-300 leading-relaxed">{activePhase.description}</p>
+            </div>
+            {activePhase.image && (
+              <SafeImage src={activePhase.image} alt={activePhase.title} className="w-full h-64 rounded-2xl" />
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAnimatedList = () => (
+    <div className="h-full w-full flex items-center justify-center p-12">
+      <div className="max-w-3xl w-full space-y-6">
+        {slide.phases.map((phase, idx) => (
+          <div
+            key={phase.id}
+            className={`transition-all duration-700 transform ${
+              idx <= currentPhase ? 'opacity-100 translate-x-0' : 'opacity-30 translate-x-6'
+            }`}
+            style={{ transitionDelay: `${idx * 100}ms` }}
+          >
+            <div className={`rounded-2xl border border-${theme.primary}/30 bg-black/40 backdrop-blur-[60px] p-8 flex gap-6 items-start`}>
+              <div className={`flex-shrink-0 w-12 h-12 rounded-full bg-${theme.primary}/20 border border-${theme.primary}/50 flex items-center justify-center`}>
+                <span className={`text-lg font-black text-${theme.primary}`}>{idx + 1}</span>
+              </div>
+              <div className="flex-1">
+                <h3 className={`text-xl font-black uppercase text-${theme.primary} mb-2`}>{phase.title}</h3>
+                <p className="text-slate-300 text-sm leading-relaxed">{phase.description}</p>
+              </div>
+              {idx <= currentPhase && (
+                <IconRenderer name="CheckCircle2" className={`w-6 h-6 text-${theme.primary} flex-shrink-0`} />
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderCardGrid = () => (
+    <div className="h-full w-full flex items-center justify-center p-12">
+      <div className="grid grid-cols-3 gap-6 max-w-5xl w-full">
+        {slide.phases.map((phase) => (
+          <div
+            key={phase.id}
+            className={`${`transition-${transition}`} rounded-2xl border border-${theme.primary}/30 bg-black/40 backdrop-blur-[60px] p-8 text-center hover:border-${theme.primary}/60 hover:bg-black/60 transition-all duration-500`}
+          >
+            <IconRenderer name={phase.icon || 'Layout'} className={`w-16 h-16 text-${theme.primary} mx-auto mb-4`} />
+            <h3 className={`text-lg font-black uppercase text-${theme.primary} mb-3`}>{phase.title}</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">{phase.description}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   switch (slide.type) {
     case 'hero': return renderHero();
     case 'comparison': return renderComparison();
     case 'spotlight': return renderSpotlight();
+    case 'infographic': return renderInfographic();
+    case 'animated-list': return renderAnimatedList();
+    case 'card-grid': return renderCardGrid();
     default: return renderStandardGrid();
   }
 };
