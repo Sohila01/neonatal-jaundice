@@ -58,3 +58,13 @@ export interface SlideContent {
   glassIntensity?: number; // 0 to 1
   transitionType?: TransitionType;
 }
+
+export interface Presentation {
+  id: string;
+  name: string;
+  description?: string;
+  slides: SlideContent[];
+  createdAt: number;
+  updatedAt: number;
+  color?: AccentColor;
+}

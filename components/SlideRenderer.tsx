@@ -104,50 +104,45 @@ const SlideRenderer: React.FC<Props> = ({ slide, currentPhase, isDarkMode = true
   );
 
   const renderHero = () => (
-    <div className="h-full w-full flex overflow-hidden relative bg-gradient-to-r from-slate-950 via-slate-950/95 to-transparent">
+    <div className="h-full w-full flex overflow-hidden relative bg-gradient-to-br from-slate-950 via-blue-950/20 to-slate-950">
       <div className="absolute inset-0 z-0 overflow-hidden">
         <SafeImage 
           src={activePhase.image || "https://images.unsplash.com/photo-1551076805-e1869033e561?q=80&w=2000&auto=format&fit=crop"}
           alt="Immersive Background"
           active={true}
-          className="w-full h-full object-cover opacity-20 grayscale brightness-50 blur-sm"
+          className="w-full h-full object-cover opacity-30 grayscale brightness-40 blur-md"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/95 to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-blue-950/10 to-slate-950"></div>
       </div>
 
-      <div className="relative z-10 w-full flex flex-col justify-center px-24">
-        <div className="space-y-12 max-w-5xl">
-          <div className="flex items-center gap-6 animate-pulse">
-            <div className={`w-24 h-px bg-${theme.primary}`}></div>
-            <span className={`text-[9px] font-black uppercase tracking-[0.8em] text-${theme.primary}`}>Diagnostics Protocol 2025</span>
+      <div className="relative z-10 w-full flex flex-col justify-center px-32">
+        <div className="space-y-10 max-w-6xl">
+          <div className="flex items-center gap-4 animate-pulse">
+            <div className={`w-16 h-1 bg-${theme.primary} rounded-full`}></div>
+            <span className={`text-[8px] font-black uppercase tracking-[0.6em] text-${theme.primary}/80`}>Clinical Diagnostics 2025</span>
           </div>
           
-          <div className="space-y-3">
-              <h1 className="atlas-title text-[90px] font-black leading-[0.85] text-white text-reveal">
-                {slide.title.split(' ')[0]}<br/>
-                <span className={`text-transparent border-t-4 border-${theme.primary} pt-4 inline-block`} style={{ WebkitTextStroke: '1.5px white' }}>
-                   {slide.title.split(' ').slice(1).join(' ')}
-                </span>
+          <div className="space-y-4">
+              <h1 className="atlas-title text-[5rem] font-black leading-[0.9] text-white text-reveal">
+                {slide.title}
               </h1>
           </div>
 
-          <p className="text-2xl text-slate-400 font-light tracking-wide max-w-3xl leading-relaxed text-reveal [animation-delay:0.4s]">
+          <p className="text-xl text-slate-300 font-light tracking-wide max-w-4xl leading-relaxed text-reveal [animation-delay:0.3s]">
             {slide.subtitle}
           </p>
 
-          <div className="flex gap-16 pt-8 overflow-visible">
-            {slide.phases.map((phase, i) => (
-              <div key={phase.id} className={`transition-all duration-[1.5s] delay-${i * 200} ${i <= currentPhase ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'}`}>
-                <div className="flex items-center gap-6 group relative">
-                  <span className={`text-6xl font-black transition-all duration-1000 ${i === currentPhase ? `text-${theme.primary} scale-125 translate-x-2` : 'text-white/5 grayscale'}`}>0{i+1}</span>
-                  <div className={`h-16 w-px transition-colors duration-1000 ${i === currentPhase ? `bg-${theme.primary}/60` : 'bg-white/5'}`}></div>
-                  <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">Protocol Node</span>
-                    <span className={`text-xl font-black uppercase transition-all duration-1000 ${i === currentPhase ? 'text-white translate-x-1' : 'text-slate-700'}`}>{phase.title}</span>
+          <div className="flex gap-12 pt-6 flex-wrap">
+            {slide.phases.slice(0, 3).map((phase, i) => (
+              <div key={phase.id} className={`transition-all duration-[1.5s] delay-${i * 150} ${i <= currentPhase ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                <div className="flex items-start gap-4 group relative">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-1000 flex-shrink-0 ${i === currentPhase ? `bg-${theme.primary} shadow-[0_0_30px_${theme.glow}] scale-110` : `bg-white/10`}`}>
+                    <span className={`text-lg font-black transition-all duration-1000 ${i === currentPhase ? 'text-white scale-125' : 'text-white/40'}`}>0{i+1}</span>
                   </div>
-                  {i === currentPhase && (
-                      <div className={`absolute -left-8 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-${theme.primary} animate-ping`}></div>
-                  )}
+                  <div className="flex flex-col mt-1">
+                    <span className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-500">Step {i+1}</span>
+                    <span className={`text-base font-bold uppercase transition-all duration-1000 ${i === currentPhase ? 'text-white' : 'text-slate-400'}`}>{phase.title}</span>
+                  </div>
                 </div>
               </div>
             ))}

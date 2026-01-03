@@ -3,20 +3,43 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { INITIAL_SLIDES } from './constants';
 import SlideRenderer from './components/SlideRenderer';
 import { IconRenderer, Icons } from './components/Icons';
-import { SlideContent, SlideType, AccentColor, CardSize, BackgroundStyle, TransitionType } from './types';
+import { SlideContent, SlideType, AccentColor, CardSize, BackgroundStyle, TransitionType, Presentation } from './types';
 import { GoogleGenAI } from "@google/genai";
 
 function App() {
-  const [slides, setSlides] = useState<SlideContent[]>(() => {
-    const saved = localStorage.getItem('atlas_slides_v10');
-    return saved ? JSON.parse(saved) : INITIAL_SLIDES;
+  const [presentations, setPresentations] = useState<Presentation[]>(() => {
+    const saved = localStorage.getItem('atlas_presentations_v1');
+    if (saved) return JSON.parse(saved);
+    return [{
+      id: 'default',
+      name: 'Neonatal Jaundice',
+      slides: INITIAL_SLIDES,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      color: 'blue'
+    }];
   });
+
+  const [currentPresentationId, setCurrentPresentationId] = useState<string>(() => {
+    const saved = localStorage.getItem('atlas_current_presentation');
+    return saved || 'default';
+  });
+
+  const [slides, setSlides] = useState<SlideContent[]>(() => {
+    const presentation = presentations.find(p => p.id === currentPresentationId);
+    return presentation?.slides || INITIAL_SLIDES;
+  });
+
+  const currentPresentation = presentations.find(p => p.id === currentPresentationId);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentPhase, setCurrentPhase] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isProcessingImage, setIsProcessingImage] = useState<string | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showPresentationsModal, setShowPresentationsModal] = useState(false);
+  const [showNewPresentationForm, setShowNewPresentationForm] = useState(false);
+  const [newPresentationName, setNewPresentationName] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -36,8 +59,33 @@ function App() {
     return (currentSlideProgress + phaseProgress) * 100;
   }, [currentSlide, currentPhase, activeSlide.phases.length, slides.length]);
 
+  // Save presentations whenever they change
   useEffect(() => {
-    localStorage.setItem('atlas_slides_v10', JSON.stringify(slides));
+    localStorage.setItem('atlas_presentations_v1', JSON.stringify(presentations));
+  }, [presentations]);
+
+  // Save current presentation ID
+  useEffect(() => {
+    localStorage.setItem('atlas_current_presentation', currentPresentationId);
+  }, [currentPresentationId]);
+
+  // Update slides when presentation changes
+  useEffect(() => {
+    const presentation = presentations.find(p => p.id === currentPresentationId);
+    if (presentation) {
+      setSlides(presentation.slides);
+      setCurrentSlide(0);
+      setCurrentPhase(0);
+    }
+  }, [currentPresentationId, presentations]);
+
+  // Update current presentation slides
+  useEffect(() => {
+    setPresentations(prev => prev.map(p => 
+      p.id === currentPresentationId 
+        ? { ...p, slides, updatedAt: Date.now() }
+        : p
+    ));
   }, [slides]);
 
   useEffect(() => {
@@ -91,6 +139,32 @@ function App() {
       setShowPasswordModal(true);
       setPasswordInput('');
       setPasswordError(false);
+    }
+  };
+
+  const handleCreatePresentation = () => {
+    if (!newPresentationName.trim()) return;
+    const newId = Date.now().toString();
+    const newPresentation: Presentation = {
+      id: newId,
+      name: newPresentationName,
+      slides: INITIAL_SLIDES,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      color: 'blue'
+    };
+    setPresentations([...presentations, newPresentation]);
+    setCurrentPresentationId(newId);
+    setNewPresentationName('');
+    setShowNewPresentationForm(false);
+  };
+
+  const handleDeletePresentation = (id: string) => {
+    if (presentations.length === 1) return;
+    const newPresentations = presentations.filter(p => p.id !== id);
+    setPresentations(newPresentations);
+    if (currentPresentationId === id) {
+      setCurrentPresentationId(newPresentations[0].id);
     }
   };
 
@@ -485,6 +559,13 @@ function App() {
       {/* Editor Trigger */}
       <div className="fixed top-8 right-8 z-[100] flex gap-3">
         <button 
+          onClick={() => setShowPresentationsModal(true)}
+          title="Presentations"
+          className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-700 border ${isDarkMode ? 'bg-emerald-600/10 border-emerald-500/30 hover:bg-emerald-600' : 'bg-emerald-400/10 border-emerald-400/30 hover:bg-emerald-400'}`}
+        >
+          <IconRenderer name="Layout" className="w-6 h-6" />
+        </button>
+        <button 
           onClick={() => setIsDarkMode(!isDarkMode)}
           title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-700 border ${isDarkMode ? 'bg-yellow-600/10 border-yellow-500/30 hover:bg-yellow-600' : 'bg-slate-400/10 border-slate-500/30 hover:bg-slate-400'}`}
@@ -499,16 +580,16 @@ function App() {
         </button>
       </div>
 
-      {/* Side Navigation Dots */}
-      <div className={`absolute left-8 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-10 pointer-events-none transition-colors ${isDarkMode ? 'text-white/5' : 'text-slate-600/30'}`}>
-        <div className={`text-vertical text-[9px] font-black uppercase tracking-[1em] animate-pulse transition-colors ${isDarkMode ? 'text-white/5' : 'text-slate-400'}`}>Diagnostics 2025</div>
-        <div className={`w-px h-32 bg-gradient-to-b from-transparent to-transparent transition-colors ${isDarkMode ? 'via-blue-500/40' : 'via-blue-400/30'}`}></div>
-        <div className="flex flex-col gap-4 overflow-y-auto max-h-[40vh] no-scrollbar pointer-events-auto px-4 py-6">
+      {/* Side Navigation Dots - Moved to Right */}
+      <div className={`absolute right-8 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-8 pointer-events-none transition-colors ${isDarkMode ? 'text-white/5' : 'text-slate-600/30'}`}>
+        <div className={`text-vertical text-[7px] font-black uppercase tracking-[0.8em] animate-pulse transition-colors ${isDarkMode ? 'text-white/5' : 'text-slate-400'}`}>Slides</div>
+        <div className={`w-px h-24 bg-gradient-to-b from-transparent to-transparent transition-colors ${isDarkMode ? 'via-blue-500/40' : 'via-blue-400/30'}`}></div>
+        <div className="flex flex-col gap-3 overflow-y-auto max-h-[50vh] no-scrollbar pointer-events-auto px-3 py-4">
            {slides.map((_, i) => (
              <div 
                key={i} 
                onClick={(e) => { e.stopPropagation(); setCurrentSlide(i); setCurrentPhase(0); }}
-               className={`w-2 h-2 rounded-full cursor-pointer transition-all duration-700 ${i === currentSlide ? isDarkMode ? 'bg-blue-500 scale-[2.5] shadow-[0_0_20px_rgba(59,130,246,1)]' : 'bg-blue-600 scale-[2.5] shadow-[0_0_20px_rgba(37,99,235,1)]' : isDarkMode ? 'bg-white/5 hover:bg-white/30' : 'bg-slate-400/30 hover:bg-slate-400/50'}`}
+               className={`w-1.5 h-1.5 rounded-full cursor-pointer transition-all duration-700 ${i === currentSlide ? isDarkMode ? 'bg-blue-500 scale-[2] shadow-[0_0_15px_rgba(59,130,246,0.8)]' : 'bg-blue-600 scale-[2] shadow-[0_0_15px_rgba(37,99,235,0.8)]' : isDarkMode ? 'bg-white/5 hover:bg-white/20' : 'bg-slate-400/20 hover:bg-slate-400/40'}`}
              ></div>
            ))}
         </div>
@@ -520,37 +601,31 @@ function App() {
         </div>
       </main>
 
-      {/* Cinematic Control Dock */}
-      <footer className="absolute bottom-10 left-20 z-50 pointer-events-none">
-        <div className="flex items-center gap-10 bg-slate-950/40 backdrop-blur-[60px] px-8 py-4 rounded-[3rem] border border-white/10 pointer-events-auto shadow-[0_30px_60px_rgba(0,0,0,0.8)]">
-          <div className="flex flex-col">
-            <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-[0.4em] mb-2 ml-1">Protocol Nav</span>
-            <div className="flex items-center gap-6">
-              <button onClick={(e) => { e.stopPropagation(); handlePrev(); }} className="p-2 hover:bg-white/10 rounded-xl transition-all group scale-110">
-                <IconRenderer name="ChevronLeft" className="w-6 h-6 group-hover:text-blue-400 transition-transform" />
-              </button>
-              <div className="text-2xl font-black atlas-title flex items-baseline gap-1.5 tabular-nums">
-                {String(currentSlide + 1).padStart(2, '0')}
-                <span className="text-white/10 mx-0.5 text-sm">/</span>
-                <span className="text-white/20 text-sm font-medium">{String(slides.length).padStart(2, '0')}</span>
-              </div>
-              <button onClick={(e) => { e.stopPropagation(); handleNext(); }} className="p-2 hover:bg-white/10 rounded-xl transition-all group scale-110">
-                <IconRenderer name="ChevronRight" className="w-6 h-6 group-hover:text-blue-400 transition-transform" />
-              </button>
+      {/* Cinematic Control Dock - Compact Version */}
+      <footer className="absolute bottom-12 left-10 z-50 pointer-events-none">
+        <div className="flex items-center gap-6 bg-slate-950/50 backdrop-blur-[80px] px-6 py-3 rounded-2xl border border-white/10 pointer-events-auto shadow-[0_20px_40px_rgba(0,0,0,0.6)]">
+          <div className="flex items-center gap-4">
+            <button onClick={(e) => { e.stopPropagation(); handlePrev(); }} className="p-1.5 hover:bg-white/10 rounded-lg transition-all group">
+              <IconRenderer name="ChevronLeft" className="w-5 h-5 group-hover:text-blue-400 transition-transform" />
+            </button>
+            <div className="text-sm font-black atlas-title flex items-baseline gap-1 tabular-nums">
+              <span className="text-base text-white">{String(currentSlide + 1).padStart(2, '0')}</span>
+              <span className="text-white/20 text-xs">/</span>
+              <span className="text-white/30 text-xs">{String(slides.length).padStart(2, '0')}</span>
             </div>
+            <button onClick={(e) => { e.stopPropagation(); handleNext(); }} className="p-1.5 hover:bg-white/10 rounded-lg transition-all group">
+              <IconRenderer name="ChevronRight" className="w-5 h-5 group-hover:text-blue-400 transition-transform" />
+            </button>
           </div>
-          <div className="w-px h-10 bg-white/10"></div>
-          <div className="flex flex-col">
-            <span className="text-[8px] font-black text-blue-500/60 uppercase tracking-[0.4em] mb-2 ml-1">Active Step</span>
-            <div className="flex gap-2.5">
-              {activeSlide.phases.map((_, i) => (
-                <div 
-                    key={i} 
-                    onClick={(e) => { e.stopPropagation(); setCurrentPhase(i); }}
-                    className={`h-2 rounded-full cursor-pointer transition-all duration-1000 ${i <= currentPhase ? 'w-10 bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.6)]' : 'w-2 bg-white/10 hover:bg-white/30'}`}
-                ></div>
-              ))}
-            </div>
+          <div className="w-px h-6 bg-white/10"></div>
+          <div className="flex gap-1.5">
+            {activeSlide.phases.map((_, i) => (
+              <div 
+                  key={i} 
+                  onClick={(e) => { e.stopPropagation(); setCurrentPhase(i); }}
+                  className={`h-1.5 rounded-full cursor-pointer transition-all duration-1000 ${i <= currentPhase ? 'w-6 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)]' : 'w-1 bg-white/10 hover:bg-white/30'}`}
+              ></div>
+            ))}
           </div>
         </div>
       </footer>
@@ -610,6 +685,106 @@ function App() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Presentations Manager Modal */}
+      {showPresentationsModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[150] flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-black border border-emerald-500/30 rounded-2xl p-8 max-w-2xl w-full shadow-2xl max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-black uppercase tracking-[0.1em] text-white">My Presentations</h2>
+              <button
+                onClick={() => setShowPresentationsModal(false)}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <IconRenderer name="X" className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Presentations List */}
+            <div className="space-y-2 mb-6">
+              {presentations.map(presentation => (
+                <div
+                  key={presentation.id}
+                  onClick={() => {
+                    setCurrentPresentationId(presentation.id);
+                    setShowPresentationsModal(false);
+                  }}
+                  className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                    currentPresentationId === presentation.id
+                      ? 'border-emerald-500 bg-emerald-500/10'
+                      : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-bold text-white text-lg">{presentation.name}</h3>
+                      <p className="text-xs text-slate-400 mt-1">
+                        {presentation.slides.length} slides • Updated {new Date(presentation.updatedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    {presentations.length > 1 && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeletePresentation(presentation.id);
+                        }}
+                        className="p-2 text-red-400 hover:bg-red-500/20 rounded-lg transition-all"
+                      >
+                        <IconRenderer name="Trash2" className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* New Presentation Form */}
+            {!showNewPresentationForm ? (
+              <button
+                onClick={() => setShowNewPresentationForm(true)}
+                className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all flex items-center justify-center gap-2"
+              >
+                <IconRenderer name="Plus" className="w-5 h-5" />
+                Create New Presentation
+              </button>
+            ) : (
+              <div className="space-y-3 pt-4 border-t border-white/10">
+                <input
+                  type="text"
+                  value={newPresentationName}
+                  onChange={(e) => setNewPresentationName(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleCreatePresentation();
+                    }
+                  }}
+                  placeholder="Presentation name..."
+                  className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white placeholder-slate-500 outline-none focus:border-emerald-500 transition-all"
+                  autoFocus
+                />
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowNewPresentationForm(false);
+                      setNewPresentationName('');
+                    }}
+                    className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-xl transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCreatePresentation}
+                    disabled={!newPresentationName.trim()}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold py-2 px-4 rounded-xl transition-all"
+                  >
+                    Create
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
