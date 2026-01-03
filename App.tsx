@@ -72,23 +72,23 @@ function App() {
     localStorage.setItem('atlas_current_presentation', currentPresentationId);
   }, [currentPresentationId]);
 
-  // Update slides when presentation changes
+  // Load slides when presentation changes (only on first load or actual presentation switch)
   useEffect(() => {
     const presentation = presentations.find(p => p.id === currentPresentationId);
-    if (presentation) {
+    if (presentation && slides.length === 0) {
       setSlides(presentation.slides);
-      setCurrentSlide(0);
-      setCurrentPhase(0);
     }
-  }, [currentPresentationId, presentations]);
+  }, [currentPresentationId]); // Only depend on currentPresentationId, not presentations
 
   // Update current presentation slides
   useEffect(() => {
-    setPresentations(prev => prev.map(p => 
-      p.id === currentPresentationId 
-        ? { ...p, slides, updatedAt: Date.now() }
-        : p
-    ));
+    if (slides.length > 0) {
+      setPresentations(prev => prev.map(p => 
+        p.id === currentPresentationId 
+          ? { ...p, slides, updatedAt: Date.now() }
+          : p
+      ));
+    }
   }, [slides]);
 
   useEffect(() => {
