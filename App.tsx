@@ -35,6 +35,7 @@ function App() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [currentPhase, setCurrentPhase] = useState(0);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Session-based auth
   const [isProcessingImage, setIsProcessingImage] = useState<string | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordModalMode, setPasswordModalMode] = useState<'edit' | 'create'>('edit');
@@ -123,6 +124,7 @@ function App() {
 
   const handlePasswordSubmit = () => {
     if (passwordInput === EDITOR_PASSWORD) {
+      setIsAuthenticated(true); // Remember this session
       if (passwordModalMode === 'edit') {
         setIsEditMode(true);
       } else if (passwordModalMode === 'create') {
@@ -141,10 +143,16 @@ function App() {
     if (isEditMode) {
       setIsEditMode(false);
     } else {
-      setPasswordModalMode('edit');
-      setShowPasswordModal(true);
-      setPasswordInput('');
-      setPasswordError(false);
+      if (isAuthenticated) {
+        // Already authenticated in this session
+        setIsEditMode(true);
+      } else {
+        // Need to authenticate
+        setPasswordModalMode('edit');
+        setShowPasswordModal(true);
+        setPasswordInput('');
+        setPasswordError(false);
+      }
     }
   };
 
@@ -340,6 +348,13 @@ function App() {
                     className={`p-3 rounded-xl transition-all ${isDarkMode ? 'text-rose-400 hover:bg-rose-500 hover:text-white' : 'text-rose-600 hover:bg-rose-600 hover:text-white'}`}
                   >
                     <IconRenderer name="Trash2" className="w-5 h-5" />
+                  </button>
+                  <button 
+                    onClick={() => setShowPresentationsModal(true)}
+                    title="Manage Presentations"
+                    className={`p-3 rounded-xl transition-all ${isDarkMode ? 'text-purple-400 hover:bg-purple-500 hover:text-white' : 'text-purple-600 hover:bg-purple-600 hover:text-white'}`}
+                  >
+                    <IconRenderer name="Layout" className="w-5 h-5" />
                   </button>
                </div>
                <button 
@@ -573,13 +588,6 @@ function App() {
 
       {/* Editor Trigger */}
       <div className="fixed top-8 right-8 z-[100] flex gap-3">
-        <button 
-          onClick={() => setShowPresentationsModal(true)}
-          title="Presentations"
-          className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-700 border ${isDarkMode ? 'bg-emerald-600/10 border-emerald-500/30 hover:bg-emerald-600' : 'bg-emerald-400/10 border-emerald-400/30 hover:bg-emerald-400'}`}
-        >
-          <IconRenderer name="Layout" className="w-6 h-6" />
-        </button>
         <button 
           onClick={() => setIsDarkMode(!isDarkMode)}
           title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
