@@ -633,7 +633,7 @@ function App() {
         </button>
         <button 
           onClick={(e) => { e.stopPropagation(); handleEditorToggle(); }}
-          className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-700 border ${isEditMode ? 'bg-red-600 border-red-500 rotate-90' : 'bg-blue-600/10 border-blue-500/30 backdrop-blur-[40px] hover:bg-blue-600 hover:scale-110'}`}
+          className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-700 border ${isEditMode ? 'bg-red-600 border-red-500 rotate-90 text-white' : 'bg-blue-600/10 border-blue-500/30 backdrop-blur-[40px] hover:bg-blue-600 text-blue-400 hover:text-white hover:scale-110'}`}
         >
           <IconRenderer name={isEditMode ? "X" : "Menu"} className="w-6 h-6" />
         </button>
